@@ -1,6 +1,8 @@
-const fetch = require('node-fetch');
+// const fetch = require('node-fetch');
 
-async function fetch_data_from_orion(orion_url) {
+import fetch from "node-fetch";
+
+export async function fetch_data_from_orion(orion_url) {
     try {
         const headers = { "Accept": "application/ld+json" };
         const params = { "type": "Asteroid" };

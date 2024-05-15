@@ -1,8 +1,15 @@
-const http = require('http');
-const url = require('url');
-const fs = require('fs');
-const fetch = require('node-fetch');
-const { fetch_data_from_orion } = require('./orion_helper.js'); // Assuming orion_helper.js exists and exports fetch_data_from_orion function
+// const http = require('http');
+// const url = require('url');
+// const fs = require('fs');
+// const fetch = require('node-fetch');
+
+import http from "http";
+import url from "url";
+import fs from "fs";
+import fetch from "node-fetch";
+
+// const { fetch_data_from_orion } = require('./orion_helper.js'); // Assuming orion_helper.js exists and exports fetch_data_from_orion function
+import { fetch_data_from_orion } from "./orion_helper.js";
 
 // NASA to Orion integration
 const NASA_API_URL = "https://data.nasa.gov/resource/gh4g-9sfh.json";
