@@ -1,7 +1,12 @@
-version: '3.3'
+version: '3.8'
+
 services:
-  orion-ld:
-    image: fiware/orion-ld
+  orion:
+    image: fiware/orion-ld:latest
+    hostname: orion
+    container_name: fiware-orion
+    networks:
+      - fiware
     ports:
       - "1026:1026"
     depends_on:
@@ -10,6 +15,19 @@ services:
 
   mongo-db:
     image: mongo:4.4
-    command: --nojournal
+    hostname: mongo-db
+    container_name: db-mongo
+    networks:
+      - fiware
     ports:
       - "27017:27017"
+    volumes:
+      - mongo-db-data:/data/db
+
+networks:
+  fiware:
+    driver: bridge
+
+volumes:
+  mongo-db-data:
+    driver: local

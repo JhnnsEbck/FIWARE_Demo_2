@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiener Linien Station Data</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #333;
+            margin: 20px;
+        }
+        .station, .line {
+            margin-bottom: 20px;
+        }
+        .line {
+            margin-left: 20px;
+        }
+        .departure {
+            margin-left: 20px;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+        #station-data {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="station-data">
+        Loading data...
+    </div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        async function fetchStationData() {
+            try {
+                const response = await fetch('/stops');
+                const data = await response.json();
+
+                const stationDataDiv = document.getElementById('station-data');
+                stationDataDiv.innerHTML = '';
+
+                const stop = data.stop;
+                const disruptions = data.disruptions;
+
+                // Initialize map
+                const map = L.map('map').setView([stop.coordinates[1], stop.coordinates[0]], 13);
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Add marker for the station
+                const marker = L.marker([stop.coordinates[1], stop.coordinates[0]]).addTo(map)
+                    .bindPopup(`<b>${stop.name}</b><br>Coordinates: [${stop.coordinates.join(', ')}]`)
+                    .openPopup();
+
+                // Add click event to show more data
+                marker.on('click', () => {
+                    const moreInfo = disruptions.map(disruption => `
+                        <h3>Line: ${disruption.lineName}</h3>
+                        <p>Direction: ${disruption.towards}</p>
+                        <p>Type: ${disruption.type}</p>
+                        <p>Departures:</p>
+                        <ul>
+                            ${disruption.departures.map(dep => `
+                                <li>
+                                    Planned: ${new Date(dep.timePlanned).toLocaleString()}<br>
+                                    Real: ${new Date(dep.timeReal).toLocaleString()}<br>
+                                    Countdown: ${dep.countdown} minutes
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `).join('');
+                    marker.getPopup().setContent(`<b>${stop.name}</b><br>Coordinates: [${stop.coordinates.join(', ')}]<br>${moreInfo}`);
+                });
+
+            } catch (error) {
+                console.error('Error fetching station data:', error);
+            }
+        }
+
+        fetchStationData();
+    </script>
+</body>
+</html>
