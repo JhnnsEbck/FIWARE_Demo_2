@@ -1,0 +1,1 @@
+// Stellt Methoden bereit, um Daten an Orion-LD zu übergeben und abzurufen
