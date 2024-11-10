@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiware Aplikation für Wienerlinien - Daten</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #navbar {
+            background-color: #333;
+            padding: 10px;
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        #navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        #navbar a:hover {
+            text-decoration: underline;
+        }
+        #search-container {
+            margin-top: 60px;
+            padding: 20px;
+            text-align: center;
+        }
+        #search-container h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        #search-container input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        #search-container button {
+            padding: 8px 12px;
+            font-size: 16px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #search-container button:hover {
+            background-color: #555;
+        }
+        #map {
+            height: calc(100% - 160px); /* Adjust height to fit under navbar and search area */
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="index.html">Home</a>
+        <a href="team.html">Team</a>
+        <a href="doc.html">Documentation</a>
+        <a href="data.html">Data</a>
+    </div>
+
+    <!-- Search Container -->
+    <div id="search-container">
+        <h1>Search for a specific station</h1>
+        <input type="text" id="search-input" placeholder="Enter station name" />
+        <button onclick="searchStation()">Search</button>
+    </div>
+
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        async function fetchStationData() {
+            try {
+                const response = await fetch('/stops');
+                const data = await response.json();
+
+                const stops = data.stops;
+
+                // Initialize the map centered on Vienna
+                const map = L.map('map').setView([48.2082, 16.3738], 13);
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Add markers for each stop with disruptions
+                stops.forEach(stop => {
+                    if (stop && stop.coordinates) {
+                        const marker = L.marker([stop.coordinates[1], stop.coordinates[0]]).addTo(map);
+
+                        // Prepare popup content with disruptions
+                        const disruptionsInfo = stop.disruptions.map(disruption => `
+                            <h3>Line: ${disruption.lineName}</h3>
+                            <p>Direction: ${disruption.towards}</p>
+                            <p>Type: ${disruption.type}</p>
+                            <p>Departures:</p>
+                            <ul>
+                                ${disruption.departures.map(dep => `
+                                    <li>
+                                        Planned: ${new Date(dep.timePlanned).toLocaleString()}<br>
+                                        Real: ${new Date(dep.timeReal).toLocaleString()}<br>
+                                        Countdown: ${dep.countdown} minutes
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `).join('') || "<p>No disruptions available</p>";
+
+                        // Update popup content with disruption info
+                        marker.bindPopup(`
+                            <b>${stop.name}</b><br>
+                            Coordinates: [${stop.coordinates.join(', ')}]<br>
+                            ${disruptionsInfo}
+                        `);
+
+                        // Store the marker reference for future search
+                        marker.stationName = stop.name;
+                    }
+                });
+
+                // Function to search and highlight a specific station
+                window.searchStation = function() {
+                    const searchValue = document.getElementById("search-input").value.toLowerCase();
+                    let found = false;
+
+                    stops.forEach(stop => {
+                        if (stop.name.toLowerCase().includes(searchValue)) {
+                            map.setView([stop.coordinates[1], stop.coordinates[0]], 15);
+                            found = true;
+                        }
+                    });
+
+                    if (!found) {
+                        alert("Station not found. Please try again.");
+                    }
+                };
+
+            } catch (error) {
+                console.error('Error fetching station data:', error);
+            }
+        }
+
+        fetchStationData();
+    </script>
+</body>
+</html>
