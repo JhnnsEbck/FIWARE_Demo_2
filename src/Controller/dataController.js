@@ -21,13 +21,13 @@ async function updateData(req) {
 
                 for (const departure of departures) {
                     const entity = new StopsModel(
-                        locationStop.properties.name, // ID der Station
-                        locationStop.properties.title, // Name der Station
-                        locationStop.geometry.coordinates[1], // Breitengrad (Latitude)
-                        locationStop.geometry.coordinates[0], // Längengrad (Longitude)
-                        line.name, // Linienname
-                        line.towards, // Fahrtrichtung
-                        departure.departureTime.countdown // Countdown bis zur Abfahrt
+                        // locationStop.properties.name,
+                        // locationStop.properties.title,
+                        // locationStop.geometry.coordinates[1], // Breitengrad (Latitude)
+                        // locationStop.geometry.coordinates[0], // Längengrad (Longitude)
+                        // line.name,
+                        // line.towards,
+                        // departure.departureTime.countdown
                     );
 
                     stopEntities.push(entity);
