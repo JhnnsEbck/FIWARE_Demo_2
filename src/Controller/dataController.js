@@ -1,37 +1,50 @@
 // Datenbeschaffung und Kommunikation mit Orion-LD
-
 const dataFetcher = require('../services/dataFetcher');
 const orionService = require('../services/orionService');
-const TransportData = require('../models/transportData');
+const StopsModel = require('../Models/StopsModel');
 
-async function updateTransportData(req, res) {
+async function updateData(req) {
     try {
-        const fetchedData = await dataFetcher.fetchTransportData();
+        const responseData = await dataFetcher.fetchData(req);
+        const monitors = responseData.data.monitors;
 
-        // Beispiel: Durchlaufe alle Stationen im API-Response und erstelle TransportData-Objekte
-        const transportEntities = fetchedData.map(station => {
-            return new TransportData(
-                station.id,
-                station.name,
-                station.location.latitude,
-                station.location.longitude,
-                station.type,
-                station.status
-            );
-        });
+        // Array für die Entities
+        const stopEntities = [];
 
-        // Sende die Daten an Orion
-        await Promise.all(
-            transportEntities.map(entity => orionService.sendDataToOrion(entity))
-        );
+        // Vorbereiten der Entities mit den Daten aus der Response
+        for (const monitor of monitors) {
+            const locationStop = monitor.locationStop;
+            const lines = monitor.lines;
 
-        res.status(200).json({ message: "Transport data successfully updated in Orion-LD" });
+            for (const line of lines) {
+                const departures = line.departures.departure;
+
+                for (const departure of departures) {
+                    const entity = new StopsModel(
+                        locationStop.properties.name, // ID der Station
+                        locationStop.properties.title, // Name der Station
+                        locationStop.geometry.coordinates[1], // Breitengrad (Latitude)
+                        locationStop.geometry.coordinates[0], // Längengrad (Longitude)
+                        line.name, // Linienname
+                        line.towards, // Fahrtrichtung
+                        departure.departureTime.countdown // Countdown bis zur Abfahrt
+                    );
+
+                    stopEntities.push(entity);
+                }
+            }
+        }
+
+        for (const entity of stopEntities) {
+            await orionService.sendDataToOrion(entity);
+        }
+
+        console.log("Transport data successfully updated in Orion-LD");
     } catch (error) {
         console.error("Error updating transport data:", error);
-        res.status(500).json({ error: "Failed to update transport data" });
     }
 }
 
 module.exports = {
-    updateTransportData,
+    updateData,
 };
