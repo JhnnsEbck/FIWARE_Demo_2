@@ -18,10 +18,17 @@ app.get('/stops', async (req, res) => {
         const stopsCollection = database.collection('stops');
         const disruptionsCollection = database.collection('disruptions');
 
-        const stop = await stopsCollection.findOne();
-        const disruptions = await disruptionsCollection.find().toArray();
+        // Fetch all stops
+        const stops = await stopsCollection.find().toArray();
 
-        res.json({ stop, disruptions });
+        // Attach disruptions to each stop
+        for (let stop of stops) {
+            stop.disruptions = await disruptionsCollection
+                .find({ stopName: stop.name })
+                .toArray();
+        }
+
+        res.json({ stops });
     } catch (error) {
         res.status(500).json({ error: error.message });
     } finally {
