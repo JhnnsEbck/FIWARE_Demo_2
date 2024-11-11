@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumentation</title>
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #navbar {
+            background-color: #333;
+            padding: 10px;
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        #navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        #navbar a:hover {
+            text-decoration: underline;
+        }
+        h1 {
+            color: #333;
+            margin-top: 70px; /* Adjust for navbar space */
+            text-align: center;
+        }
+        .documentation-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .documentation-profile {
+            text-align: left;
+            border: 1px solid #ccc;
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            line-height: 1.6;
+            font-size: 16px;
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        .documentation-profile h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #444;
+        }
+        .documentation-profile p {
+            font-size: 16px;
+            color: #555;
+            text-align: justify;
+        }
+        .icon {
+            font-size: 50px;
+            color: #777;
+            text-align: center;
+            display: block;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="index.html">Home</a>
+        <a href="team.html">Team</a>
+        <a href="doc.html">Documentation</a>
+        <a href="data.html">Data</a>
+    </div>
+
+    <h1>Dokumentation</h1>
+    <div class="documentation-container">
+        <div class="documentation-profile">
+            <div class="icon">📖</div>
+            <h2>Project Documentation</h2>
+            <p>
+                The project "FIWARE Demo" used several specific tools and frameworks tailored to develop a responsive and real-time urban mobility application. Here’s a description of each tool and its purpose in this project:
+            </p>
+            <p>
+                <strong>FIWARE Framework:</strong> This open-source framework for building smart applications was used to create the "Smart Transit Explorer." It allowed integration for urban mobility data and facilitated interaction between different components, specifically enabling smart city solutions.
+            </p>
+            <p>
+                <strong>Node.js:</strong> Serving as the backend, Node.js was crucial for processing requests and managing data flow between the Wiener Linien API and Orion LD. It dynamically handled API requests, providing real-time updates to the frontend.
+            </p>
+            <p>
+                <strong>Leaflet.js:</strong> This JavaScript library for interactive maps was used in the frontend to display real-time public transport data on a map interface, enhancing the user experience by providing a visual and interactive component.
+            </p>
+            <p>
+                <strong>Orion LD Context Broker:</strong> This component of the FIWARE ecosystem enabled the handling and querying of real-time context data, which was necessary for managing live updates in public transport data, improving both data accuracy and system responsiveness.
+            </p>
+            <p>
+                <strong>Docker:</strong> Used for containerization, Docker ensured that the development and deployment environments were consistent, making it easier to deploy the application across different platforms without compatibility issues.
+            </p>
+            <p>
+                <strong>GitLab and Git:</strong> For version control and collaboration, GitLab and Git were essential. They provided a repository tracking code changes and supporting collaboration among team members through shared repositories.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
