@@ -1,1 +1,0 @@
-// Endpunkte, die Daten aus Orion für das Frontend bereitstellen
