@@ -11,23 +11,23 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/stops', async (req, res) => {
-    try {
-        await client.connect();
-        const database = client.db('wienerlinien');
-        const stopsCollection = database.collection('stops');
-        const disruptionsCollection = database.collection('disruptions');
+// app.get('/stops', async (req, res) => {
+//     try {
+//         await client.connect();
+//         const database = client.db('wienerlinien');
+//         const stopsCollection = database.collection('stops');
+//         const disruptionsCollection = database.collection('disruptions');
 
-        const stop = await stopsCollection.findOne();
-        const disruptions = await disruptionsCollection.find().toArray();
+//         const stop = await stopsCollection.findOne();
+//         const disruptions = await disruptionsCollection.find().toArray();
 
-        res.json({ stop, disruptions });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    } finally {
-        await client.close();
-    }
-});
+//         res.json({ stop, disruptions });
+//     } catch (error) {
+//         res.status(500).json({ error: error.message });
+//     } finally {
+//         await client.close();
+//     }
+// });
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
