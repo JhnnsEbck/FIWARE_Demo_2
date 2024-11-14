@@ -1,42 +1,20 @@
 // Datenbeschaffung und Kommunikation mit Orion-LD
 const dataFetcher = require('../services/dataFetcher');
-const orionService = require('../services/orionService');
+const orionService = require('../Services/orionService');
 const StopsModel = require('../Models/StopsModel');
 
 async function updateData(req) {
     try {
-        const responseData = await dataFetcher.fetchData(req);
-        const monitors = responseData.data.monitors;
+        const res = await dataFetcher.fetchData(req);
+        
+        // Liste für die Entities
+        const stopEntities = res.data.monitors.map(monitor => {
+            return new StopsModel(monitor);
+        });
 
-        // Array für die Entities
-        const stopEntities = [];
-
-        // Vorbereiten der Entities mit den Daten aus der Response
-        for (const monitor of monitors) {
-            const locationStop = monitor.locationStop;
-            const lines = monitor.lines;
-
-            for (const line of lines) {
-                const departures = line.departures.departure;
-
-                for (const departure of departures) {
-                    const entity = new StopsModel(
-                        // locationStop.properties.name,
-                        // locationStop.properties.title,
-                        // locationStop.geometry.coordinates[1], // Breitengrad (Latitude)
-                        // locationStop.geometry.coordinates[0], // Längengrad (Longitude)
-                        // line.name,
-                        // line.towards,
-                        // departure.departureTime.countdown
-                    );
-
-                    stopEntities.push(entity);
-                }
-            }
-        }
-
-        for (const entity of stopEntities) {
-            await orionService.sendDataToOrion(entity);
+        // Entities an Orion-LD
+        for (const stopEntity of stopEntities) {
+            await orionService.sendDataToOrion(stopEntity);
         }
 
         console.log("Transport data successfully updated in Orion-LD");
@@ -45,6 +23,5 @@ async function updateData(req) {
     }
 }
 
-module.exports = {
-    updateData,
-};
+module.exports = { updateData };
+
