@@ -7,22 +7,40 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function fetchDataAndStore() {
     try {
-        // Connect to MongoDB
         await client.connect();
         const database = client.db('wienerlinien');
         const stopsCollection = database.collection('stops');
         const disruptionsCollection = database.collection('disruptions');
 
-        // Fetch data from Wiener Linien API
-        const response = await axios.get('https://www.wienerlinien.at/ogd_realtime/monitor?rbl=253');
+        const response = await axios.get('https://www.wienerlinien.at/ogd_realtime/monitor?rbl=256');
+        const response2 = await axios.get('https://www.wienerlinien.at/ogd_realtime/monitor?rbl=253');
         const data = response.data;
+        const data2 = response2.data;
 
-        // Extract stop and disruption data
+        // Stop 1 data
         const stop = {
             name: data.data.monitors[0].locationStop.properties.title,
             coordinates: data.data.monitors[0].locationStop.geometry.coordinates,
         };
         const disruptions = data.data.monitors[0].lines.map(line => ({
+            stopName: stop.name,  // Add stop name to link disruptions
+            lineName: line.name,
+            towards: line.towards,
+            type: line.type,
+            departures: line.departures.departure.map(departure => ({
+                timePlanned: departure.departureTime.timePlanned,
+                timeReal: departure.departureTime.timeReal,
+                countdown: departure.departureTime.countdown,
+            }))
+        }));
+
+        // Stop 2 data
+        const stop2 = {
+            name: data2.data.monitors[0].locationStop.properties.title,
+            coordinates: data2.data.monitors[0].locationStop.geometry.coordinates,
+        };
+        const disruptions2 = data2.data.monitors[0].lines.map(line => ({
+            stopName: stop2.name,  // Add stop name to link disruptions
             lineName: line.name,
             towards: line.towards,
             type: line.type,
@@ -37,9 +55,11 @@ async function fetchDataAndStore() {
         await stopsCollection.deleteMany({});
         await disruptionsCollection.deleteMany({});
 
-        // Store data in MongoDB
+        // Insert stop and disruption data
         await stopsCollection.insertOne(stop);
         await disruptionsCollection.insertMany(disruptions);
+        await stopsCollection.insertOne(stop2);
+        await disruptionsCollection.insertMany(disruptions2);
 
         console.log("Data successfully stored in MongoDB");
     } catch (error) {

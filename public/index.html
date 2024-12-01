@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wiener Linien Station Data</title>
+    <title>Fiware Aplikation für Wienerlinien</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         body, html {
@@ -11,91 +11,118 @@
             margin: 0;
             font-family: Arial, sans-serif;
         }
-        h1 {
-            color: #333;
-            margin: 20px;
-        }
-        .station, .line {
-            margin-bottom: 20px;
-        }
-        .line {
-            margin-left: 20px;
-        }
-        .departure {
-            margin-left: 20px;
-        }
-        #map {
-            height: 100%;
-            width: 100%;
-        }
-        #station-data {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background-color: white;
+       
+        /* Navbar Styling */
+        #navbar {
+            background-color: #28a745; /* Bootstrap green */
             padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            display: flex;
+            gap: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        #navbar a {
+            color: white; /* Text color to contrast with green */
+            text-decoration: none;
+            font-size: 18px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        #navbar a:hover {
+            background-color: #218838; /* Darker green on hover */
+            text-decoration: none;
+        }
+
+        #content {
+            background-image: url('https://lavegainnova.es/wp-content/uploads/2023/11/por-que-fiware.jpg');
+            background-size: cover;
+            background-position: center;
+            height: calc(100% - 50px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .title {
+            background-color: rgba(128, 128, 128, 0.7);
+            padding: 20px;
+            font-size: 36px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        #footer {
+            background-color: #fff; /* White background */
+            color: #28a745; /* Green text to match theme */
+            text-align: center;
+            padding: 20px 10px;
+            position: fixed; /* Stick footer to bottom */
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for separation */
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-nav {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-nav a {
+            color: #28a745; /* Green text for links */
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-nav a:hover {
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .footer-nav {
+                flex-direction: column;
+                gap: 5px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="map"></div>
-    <div id="station-data">
-        Loading data...
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="index.html">Home</a>
+        <a href="team.html">Team</a>
+        <a href="doc.html">Documentation</a>
+        <a href="data.html">Data</a>
     </div>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        async function fetchStationData() {
-            try {
-                const response = await fetch('/stops');
-                const data = await response.json();
 
-                const stationDataDiv = document.getElementById('station-data');
-                stationDataDiv.innerHTML = '';
-
-                const stop = data.stop;
-                const disruptions = data.disruptions;
-
-                // Initialize map
-                const map = L.map('map').setView([stop.coordinates[1], stop.coordinates[0]], 13);
-
-                // Add OpenStreetMap tile layer
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors'
-                }).addTo(map);
-
-                // Add marker for the station
-                const marker = L.marker([stop.coordinates[1], stop.coordinates[0]]).addTo(map)
-                    .bindPopup(`<b>${stop.name}</b><br>Coordinates: [${stop.coordinates.join(', ')}]`)
-                    .openPopup();
-
-                // Add click event to show more data
-                marker.on('click', () => {
-                    const moreInfo = disruptions.map(disruption => `
-                        <h3>Line: ${disruption.lineName}</h3>
-                        <p>Direction: ${disruption.towards}</p>
-                        <p>Type: ${disruption.type}</p>
-                        <p>Departures:</p>
-                        <ul>
-                            ${disruption.departures.map(dep => `
-                                <li>
-                                    Planned: ${new Date(dep.timePlanned).toLocaleString()}<br>
-                                    Real: ${new Date(dep.timeReal).toLocaleString()}<br>
-                                    Countdown: ${dep.countdown} minutes
-                                </li>
-                            `).join('')}
-                        </ul>
-                    `).join('');
-                    marker.getPopup().setContent(`<b>${stop.name}</b><br>Coordinates: [${stop.coordinates.join(', ')}]<br>${moreInfo}`);
-                });
-
-            } catch (error) {
-                console.error('Error fetching station data:', error);
-            }
-        }
-
-        fetchStationData();
-    </script>
+    <!-- Content Section with Background Image and Title -->
+    <div id="content">
+        <div class="title">Fiware Aplikation für Wienerlinien</div>
+    </div>
 </body>
+<footer id="footer">
+    <div class="footer-content">
+        <p>&copy; 2024 FIWARE. All rights reserved.</p>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="team.html">Team</a>
+            <a href="doc.html">Documentation</a>
+            <a href="data.html">Data</a>
+        </nav>
+    </div>
+</footer>
 </html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiware Aplikation für Wienerlinien - Daten</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        /* General Styling */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Navbar Styling */
+        #navbar {
+            background-color: #28a745; /* Bootstrap green */
+            padding: 10px;
+            display: flex;
+            gap: 15px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+
+        #navbar a {
+            color: white; /* Text color to contrast with green */
+            text-decoration: none;
+            font-size: 18px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        #navbar a:hover {
+            background-color: #218838; /* Darker green on hover */
+            text-decoration: none;
+        }
+
+        /* Main Content Area */
+        #content {
+            display: flex;
+            flex: 1;
+            margin-top: 50px; /* Offset for navbar */
+            height: calc(100vh - 50px); /* Adjust height for navbar */
+        }
+        #search-container {
+            margin-top: 60px;
+            padding: 20px;
+            text-align: center;
+        }
+        #search-container h1 {
+            font-size: 24px;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        #search-container input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        #search-container button {
+            padding: 8px 12px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #search-container button:hover {
+            background-color: #555;
+        }
+
+        /* Map Container Styling */
+        #map-container {
+            flex: 3; /* Map takes 75% of the width */
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Details Section Styling */
+        #details-container {
+            flex: 1; /* Details section takes 25% of the width */
+            background-color: #f4f4f4;
+            border-left: 3px solid #4CAF50; /* Green accent */
+            overflow-y: auto;
+            padding: 15px;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #details-container h2 {
+            text-align: center;
+            font-size: 24px;
+            color: #4CAF50; /* Green title */
+            margin-bottom: 15px;
+        }
+
+        #details-content {
+            font-size: 14px;
+            color: #555;
+        }
+
+        #details-content h3 {
+            margin: 10px 0;
+            color: #333;
+        }
+
+        /* Card Style for Disruptions */
+        .disruption-card {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-left: 5px solid #4CAF50; /* Green stripe */
+            border-radius: 8px;
+            margin: 10px 0;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .disruption-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .disruption-card h4 {
+            font-size: 16px;
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .disruption-card p {
+            font-size: 14px;
+            margin: 2px 0;
+        }
+
+        .disruption-card ul {
+            margin: 5px 0 0 15px;
+            padding: 0;
+            list-style-type: disc;
+        }
+
+        .disruption-card li {
+            margin-bottom: 5px;
+        }
+
+        /* Highlight for Important Info */
+        .highlight {
+            font-weight: bold;
+            color: #FF5722; /* Orange highlight */
+        }
+
+        /* Button-Like Elements */
+        .button-like {
+            display: inline-block;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .button-like:hover {
+            background-color: #45a049; /* Slightly darker green */
+        }
+
+         /* Footer Styling */
+        #footer {
+            background-color: #fff; /* White background */
+            color: #28a745; /* Green text to match theme */
+            text-align: center;
+            padding: 20px 10px;
+            position: fixed; /* Stick footer to bottom */
+            bottom: 0;
+            width: 100%;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for separation */
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .footer-nav {
+            display: flex;
+            gap: 15px;
+        }
+
+        .footer-nav a {
+            color: #28a745; /* Green text for links */
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .footer-nav a:hover {
+            text-decoration: underline;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .footer-nav {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="index.html">Home</a>
+        <a href="team.html">Team</a>
+        <a href="doc.html">Documentation</a>
+        <a href="data.html">Data</a>
+    </div>
+
+    <!-- Search Container -->
+    <div id="search-container">
+        <h1>Search for a specific station</h1>
+        <input type="text" id="search-input" placeholder="Enter station name" />
+        <button onclick="searchStation()">Search</button>
+    </div>
+
+    <!-- Content Area -->
+    <div id="content">
+        <!-- Map Section -->
+        <div id="map-container">
+            <div id="map"></div>
+        </div>
+
+        <!-- Details Section -->
+        <div id="details-container">
+            <h2>Station Details</h2>
+            <div id="details-content">
+                <p>Click on a marker to see station and disruption details.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        async function fetchStationData() {
+            try {
+                const response = await fetch('/stops');
+                const data = await response.json();
+                const stops = data.stops;
+
+                // Initialize the map centered on Vienna
+                const map = L.map('map').setView([48.2082, 16.3738], 13);
+
+                // Add OpenStreetMap tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Add markers for each stop with disruptions
+                stops.forEach(stop => {
+                    if (stop && stop.coordinates) {
+                        const marker = L.marker([stop.coordinates[1], stop.coordinates[0]]).addTo(map);
+
+                        // Prepare details content
+                        const disruptionsInfo = stop.disruptions.map(disruption => `
+                            <div class="disruption-card">
+                                <h4>Line: <span class="highlight">${disruption.lineName}</span></h4>
+                                <p>Direction: <span class="highlight">${disruption.towards}</span></p>
+                                <p>Type: <span class="highlight">${disruption.type}</span></p>
+                                <p>Departures:</p>
+                                <ul>
+                                    ${disruption.departures.map(dep => `
+                                        <li>
+                                            Planned: ${new Date(dep.timePlanned).toLocaleString()}<br>
+                                            Real: ${new Date(dep.timeReal).toLocaleString()}<br>
+                                            Countdown: ${dep.countdown} minutes
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `).join('') || "<p>No disruptions available</p>";
+
+                        // Bind click event to update details section
+                        marker.on('click', () => {
+                            document.getElementById('details-content').innerHTML = `
+                                <h3>${stop.name}</h3>
+                                <p>Coordinates: [${stop.coordinates.join(', ')}]</p>
+                                ${disruptionsInfo}
+                            `;
+                        });
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error fetching station data:', error);
+            }
+        }
+
+        fetchStationData();
+    </script>
+</body>
+<footer id="footer">
+    <div class="footer-content">
+        <p>&copy; 2024 FIWARE. All rights reserved.</p>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="team.html">Team</a>
+            <a href="doc.html">Documentation</a>
+            <a href="data.html">Data</a>
+        </nav>
+    </div>
+</footer>
+</html>
