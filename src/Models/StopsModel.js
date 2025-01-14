@@ -2,7 +2,6 @@
 
 class StopsModel {
     constructor(monitor) {
-        // console.log(monitor.lines[0].departures.departure[0].vehicle.name);
         const ID = monitor.locationStop.properties.attributes.rbl;
 
         this["@context"] = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld";
@@ -54,11 +53,32 @@ class StopsModel {
                     direction: departure.vehicle.direction,
                     barrierFree: departure.vehicle.barrierFree,
                     foldingRamp: departure.vehicle.foldingRamp,
-                    trafficjam: departure.vehicle.trafficjam,                    
+                    trafficjam: departure.vehicle.trafficjam,
                     linienId: departure.vehicle.linienId
                 }
             }
         }));
+    }
+
+    static mergeEntities(existingEntity, newMonitor) {
+        // Kombiniert Linien der neuen Monitor-Daten mit bestehenden Linien
+        const newLines = newMonitor.lines.map(line => ({
+            name: line.name,
+            towards: line.towards,
+            departures: new StopsModel().processDepartures(line.departures.departure)
+        }));
+
+        // Füge neue Linien hinzu, vermeide Duplikate
+        const updatedLines = [...existingEntity.lines.value];
+
+        newLines.forEach(newLine => {
+            if (!updatedLines.some(line => line.name === newLine.name && line.towards === newLine.towards)) {
+                updatedLines.push(newLine);
+            }
+        });
+
+        existingEntity.lines.value = updatedLines;
+        return existingEntity;
     }
 }
 
