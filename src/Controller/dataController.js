@@ -27,46 +27,56 @@ async function requestAll(){
     await apiRequesterService.processUrls();
 }
 
-async function updateData(req) {
+async function fetchStopData(req, divaNumber) {
+    console.log("Fetching data from:", req);
+    const res = await dataFetcher.fetchData(req, divaNumber);
+
+    if (!res.data.monitors) {
+        console.log("No data found");
+        return;
+    }
+    console.log("Data fetched successfully");
+    console.log("Data:", res);
+                    
+    var messageCode = res.message.messageCode;
+
+    if(messageCode != 1) throw new Error(`Unexpected Message Code: ${res.message.messageCode}`);
+    else console.log("Message Code: 1 - OK");
+    
+    return res;
+}
+
+function groupMonitorsByStopId(monitors) {
+    const grouped = monitors.reduce((acc, monitor) => {
+        const stopId = monitor.locationStop.properties.attributes.rbl;
+
+        if (!acc[stopId]) {
+            acc[stopId] = [];
+        }
+
+        acc[stopId].push(monitor);
+        return acc;
+    }, {});
+
+    return grouped;
+}
+
+async function updateData(req, divaNumber) {
     try {
         //await requestAll();
-
-        //----------------------------------------------
         
-        console.log("Fetching data from:", req);
-        const res = await dataFetcher.fetchData(req);
+        const res = await fetchStopData(req, divaNumber);
+        const groupedMonitors = groupMonitorsByStopId(res.data.monitors);
 
-        if (!res.data.monitors) {
-            console.log("No data found");
-            return;
+        const stopEntities = Object.entries(groupedMonitors).map(([stopId, monitors]) => {
+            return new StopsModel(monitors, divaNumber);
+        });
+
+        // Entities an Orion-LD
+        for (const stopEntity of stopEntities) {
+            await orionService.sendDataToOrion(stopEntity);
         }
 
-        console.log("Data fetched successfully");
-        console.log("Data:", res);
-        
-        var messageCode = res.message.messageCode;
-        if(messageCode != 1) throw new Error(`Unexpected Message Code: ${res.message.messageCode}`);
-        else console.log("Message Code: 1 - OK");
-
-
-        for (const monitor of res.data.monitors) {
-            const stopEntity = new StopsModel(monitor);
-
-            // Prüfen, ob die Entität bereits existiert
-            const existingEntity = await orionService.getEntity(stopEntity.id);
-
-            if (existingEntity) {
-                // Linien zusammenführen, wenn die Entität existiert
-                const updatedEntity = StopsModel.mergeEntities(existingEntity, monitor);
-                await orionService.updateEntity(updatedEntity);
-            } else {
-                // Neue Entität erstellen
-                await orionService.sendDataToOrion(stopEntity);
-            }
-        }
-
-
-        console.log("Stops successfully created in Orion-LD");
     } catch (error) {
         console.error("Error updating transport data:", error);
     }

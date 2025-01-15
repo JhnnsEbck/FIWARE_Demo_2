@@ -4,7 +4,11 @@ function buildApiUrl(divaNumber) {
         diva: divaNumber,
         activateTrafficInfo: 'stoerunglang'
     });
-    return `${baseUrl}?${params.toString()}`;
+    const url = `${baseUrl}?${params.toString()}`;
+    console.log(`Generated API URL: ${url}`); // Debug-Ausgabe
+    console.log(typeof url); // Debug-Ausgabe
+    return url;
+
 }
 
 module.exports = {

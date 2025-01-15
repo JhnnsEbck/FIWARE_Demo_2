@@ -1,20 +1,7 @@
 const axios = require('axios');
 const config = require('../config');
 
-async function sendDataToOrion(entity) {
-    try {
-        const response = await axios.post(`${config.ORION_BASE_URL}/ngsi-ld/v1/entities/`, entity, {
-            headers: {
-                'Content-Type': 'application/ld+json'
-            },
-            
-        });
-        console.log(`Entity ${entity.id} created in Orion-LD. Response: ${response.status}`);
-    } catch (error) {
-        console.error(`Error sending entity ${entity.id} to Orion-LD:`, error.response ? error.response.data : error);
-    }
-}
-
+// Prüfen, ob eine Entität existiert
 async function getEntity(entityId) {
     try {
         const response = await axios.get(`${config.ORION_BASE_URL}/ngsi-ld/v1/entities/${entityId}`);
@@ -27,23 +14,36 @@ async function getEntity(entityId) {
     }
 }
 
-async function updateEntity(entity) {
+// Aktualisieren einer Entität
+async function updateEntity(entityId, updatedAttributes) {
     try {
-        const response = await axios.patch(`${config.ORION_BASE_URL}/ngsi-ld/v1/entities/${entity.id}/attrs`, entity, {
+        const response = await axios.patch(`${config.ORION_BASE_URL}/ngsi-ld/v1/entities/${entityId}/attrs`, updatedAttributes, {
             headers: {
                 'Content-Type': 'application/ld+json'
             }
         });
-        console.log(`Entity ${entity.id} updated in Orion-LD. Response: ${response.status}`);
+        console.log(`Entity ${entityId} updated in Orion-LD. Response: ${response.status}`);
     } catch (error) {
-        console.error(`Error updating entity ${entity.id} in Orion-LD:`, error.response ? error.response.data : error);
+        console.error(`Error updating entity ${entityId} in Orion-LD:`, error.response ? error.response.data : error);
     }
 }
 
-
+// Neue Entität erstellen
+async function sendDataToOrion(entity) {
+    try {
+        const response = await axios.post(`${config.ORION_BASE_URL}/ngsi-ld/v1/entities/`, entity, {
+            headers: {
+                'Content-Type': 'application/ld+json'
+            }
+        });
+        console.log(`Entity ${entity.id} created in Orion-LD. Response: ${response.status}`);
+    } catch (error) {
+        console.error(`Error sending entity ${entity.id} to Orion-LD:`, error.response ? error.response.data : error);
+    }
+}
 
 module.exports = {
-    sendDataToOrion,
     getEntity,
-    updateEntity
+    updateEntity,
+    sendDataToOrion
 };
