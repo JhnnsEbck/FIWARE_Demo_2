@@ -27,9 +27,8 @@ async function requestAll(){
     await apiRequesterService.processUrls();
 }
 
-async function fetchStopData(req, divaNumber) {
-    console.log("Fetching data from:", req);
-    const res = await dataFetcher.fetchData(req, divaNumber);
+async function fetchStopData(divaNumber) {
+    const res = await dataFetcher.fetchData(divaNumber);
 
     if (!res.data.monitors) {
         console.log("No data found");
@@ -61,11 +60,11 @@ function groupMonitorsByStopId(monitors) {
     return grouped;
 }
 
-async function updateData(req, divaNumber) {
+async function updateData(divaNumber) {
     try {
         //await requestAll();
         
-        const res = await fetchStopData(req, divaNumber);
+        const res = await fetchStopData(divaNumber);
         const groupedMonitors = groupMonitorsByStopId(res.data.monitors);
 
         const stopEntities = Object.entries(groupedMonitors).map(([stopId, monitors]) => {

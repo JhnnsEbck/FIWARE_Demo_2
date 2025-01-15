@@ -1,7 +1,10 @@
 const axios = require('axios');
 const urlBuilder = require('../Services/urlBuilderService');
-async function fetchData(req, divaNumber) {
+
+async function fetchData(divaNumber) {
     const apiUrl = urlBuilder.buildApiUrl(divaNumber);
+    console.log("Fetching data from:", apiUrl);
+    
     try {
         const response = await axios.get(apiUrl);
         return response.data;
