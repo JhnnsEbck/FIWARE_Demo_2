@@ -14,28 +14,60 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/stops', async (req, res) => {
     try {
         await client.connect();
-        const database = client.db('wienerlinien');
-        const stopsCollection = database.collection('stops');
-        const disruptionsCollection = database.collection('disruptions');
+    
+        const db = client.db("orion");
+        const collection = db.collection("entities");
 
-        // Fetch all stops
-        const stops = await stopsCollection.find().toArray();
+        const docs = await collection.find().toArray();
+    
+        //transform documents into the shape we need
+        const stops = docs.map(doc => {
+          // get name
+          const name = doc.attrs?.['https://uri=etsi=org/ngsi-ld/name']?.value || null;
+    
+          // get coordinates
+          const coordinates = doc.attrs?.location?.value?.coordinates || null;
+    
+          // get lines attribute, then handle single vs array
+          const linesAttr = doc.attrs?.['https://uri=etsi=org/ngsi-ld/default-context/lines'];
+          const linesValue = linesAttr?.value;
 
-        // Attach disruptions to each stop
-        for (let stop of stops) {
-            stop.disruptions = await disruptionsCollection
-                .find({ stopName: stop.name })
-                .toArray();
-        }
-
+          const linesArray = Array.isArray(linesValue)
+            ? linesValue
+            : linesValue
+            ? [linesValue]
+            : [];
+    
+          // map over each line object
+          const lines = linesArray.map(lineObj => {
+            const lineName = lineObj?.name || null;
+            const direction = lineObj?.towards || null;
+    
+            // departures is an array of departure objects
+            const departures = (lineObj?.departures || []).map(dep => {
+              const timePlanned = dep?.departureTime?.value?.timePlanned || null;
+              const timeReal = dep?.departureTime?.value?.timeReal || null;
+    
+              return { timePlanned, timeReal };
+            });
+    
+            return { name: lineName, direction, departures };
+          });
+    
+          // Return the final shape for each stop
+          return { name, coordinates, lines };
+        });
+    
         res.json({ stops });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    } finally {
-        await client.close();
-    }
+      } catch (err) {
+        console.error('Error fetching stops:', err);
+        res.status(500).send('Error retrieving stops');
+      } finally {
+        if (client) {
+          await client.close();
+        }
+      }
 });
-
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
