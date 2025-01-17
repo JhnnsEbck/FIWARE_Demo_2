@@ -96,7 +96,7 @@
       width: 100%;
     }
 
-    /* Info panel for marker click/search click */
+    /* Info panel */
     #info-panel {
       position: absolute;
       top: 120px;
@@ -145,18 +145,18 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    let stopsData = [];         // all stops are stored here
-    let map, infoPanel;         // map references and info panel
-    let markers = [];           // leaflet markers
+    let stopsData = [];  
+    let map, infoPanel;
+    let markers = [];
 
-    // Fetch the stops from /stops and initialize the map and markers
+    // 1) Fetch the initial list of stops from /stops
     async function fetchStationData() {
       try {
         const response = await fetch('/stops');
         const data = await response.json();
         stopsData = data.stops;
 
-        console.log(data);
+        console.log('Initial stopsData:', stopsData);
 
         // Create Leaflet map centered on Vienna
         map = L.map('map').setView([48.2082, 16.3738], 13);
@@ -171,23 +171,27 @@
           if (stop && stop.coordinates && stop.coordinates.length === 2) {
             const [lng, lat] = stop.coordinates;
             const marker = L.marker([lat, lng]).addTo(map);
+            marker.stopData = stop; // store the entire stop object
 
-            // store the stop in the marker
-            marker.stopData = stop;
-
-            // When marker is clicked, show info in the right panel
-            marker.on('click', () => {
-              showStopInfo(stop);
+            // Marker click -> update DB, wait, re-fetch, show updated info
+            marker.on('click', async () => {
+              await updateStopData(stop.diva);
+              // wait a bit for DB to update
+              await new Promise(r => setTimeout(r, 200));
+              // re-fetch the data
+              const updatedStop = await refetchSingleStop(stop.diva);
+              // now show updated info
+              showStopInfo(updatedStop);
             });
 
             markers.push(marker);
           }
         });
 
-        // Initialize references
+        // Info panel reference
         infoPanel = document.getElementById('info-panel');
 
-        // Add input listener for autocomplete suggestions
+        // Autocomplete
         const searchInput = document.getElementById("search-input");
         searchInput.addEventListener("input", onSearchInput);
 
@@ -196,12 +200,40 @@
       }
     }
 
-    // Called when the user types in the search bar
+    // 2) Update data for a given diva
+    async function updateStopData(diva) {
+      if (!diva) return;
+      try {
+        await fetch('/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diva })
+        });
+      } catch (err) {
+        console.error('Error updating data:', err);
+      }
+    }
+
+    // 3) Re-fetch the entire stops array, find the updated stop by diva
+    async function refetchSingleStop(diva) {
+      try {
+        const response = await fetch('/stops');
+        const data = await response.json();
+        const newStops = data.stops; 
+        console.log('Refetched stopsData:', newStops);
+
+        // find the updated stop
+        return newStops.find(s => s.diva === diva) || null;
+      } catch (error) {
+        console.error('Error re-fetching single stop:', error);
+        return null;
+      }
+    }
+
+    // 4) Autocomplete suggestions
     function onSearchInput(event) {
       const inputVal = event.target.value.toLowerCase();
       const autoList = document.getElementById("autocomplete-list");
-
-      // Clear previous suggestions
       autoList.innerHTML = '';
 
       if (!inputVal) {
@@ -209,41 +241,32 @@
         return;
       }
 
-      // Filter stops that match
       const matchedStops = stopsData.filter(stop =>
         stop.name && stop.name.toLowerCase().includes(inputVal)
       );
 
-      // If no matches, hide
       if (matchedStops.length === 0) {
         autoList.style.display = 'none';
         return;
       }
 
-      // Otherwise, create suggestion items
       matchedStops.forEach(stop => {
         const item = document.createElement("div");
         item.classList.add("autocomplete-item");
         item.textContent = stop.name;
         item.onclick = () => {
-          // On click, set input to stop's name
           document.getElementById("search-input").value = stop.name;
-          // Clear suggestions
           autoList.innerHTML = '';
           autoList.style.display = 'none';
         };
         autoList.appendChild(item);
       });
 
-      // Show the list
       autoList.style.display = 'block';
     }
 
-    // On "Search" button click
-    //  1) find station by name
-    //  2) recenter map
-    //  3) show side panel with station info
-    function searchStation() {
+    // 5) Search button -> find station, update, wait, re-fetch, show info
+    async function searchStation() {
       const searchValue = document.getElementById("search-input").value.toLowerCase();
       let foundStop = null;
 
@@ -265,21 +288,32 @@
         map.setView([lat, lng], 15);
       }
 
-      // Show info
-      showStopInfo(foundStop);
+      // Update DB for real-time data
+      await updateStopData(foundStop.diva);
+      // Wait a bit
+      await new Promise(r => setTimeout(r, 200));
+      // Re-fetch data and find updated station
+      const updatedStop = await refetchSingleStop(foundStop.diva);
+      // Then show side panel
+      showStopInfo(updatedStop);
     }
 
-    // Show station info in the side panel
+    // 6) Build the info panel content
     function showStopInfo(stop) {
+      if (!stop) {
+        infoPanel.innerHTML = "<p>Error: Could not load updated data.</p>";
+        infoPanel.style.display = 'block';
+        return;
+      }
+
       infoPanel.innerHTML = generateStopHTML(stop);
       infoPanel.style.display = 'block';
     }
 
-    // Build HTML for a given stop
+    // 7) Create HTML for a stop’s lines/departures
     function generateStopHTML(stop) {
       const { name, lines } = stop;
 
-      // Build a list of lines
       let linesHTML = '';
       lines.forEach(line => {
         const departuresHTML = line.departures.map(dep => {
@@ -290,9 +324,7 @@
           <li>
             <strong>${line.name || 'No line name'}</strong>
             <br/>Direction: ${line.direction || 'N/A'}
-            <ul>
-              ${departuresHTML}
-            </ul>
+            <ul>${departuresHTML}</ul>
           </li>
         `;
       });
@@ -304,36 +336,30 @@
       `;
     }
 
+    // 8) Format departure info (planned vs real)
     function formatDeparture(dep) {
       const plannedStr = dep.timePlanned;
       const realStr = dep.timeReal;
-
-      // Convert plannedStr to "YYYY-MM-DD HH:mm"
       const plannedDisplay = formatDateTime(plannedStr);
 
-      // If no real time => say "On time"
       if (!realStr || realStr === 'N/A') {
         return `${plannedDisplay} <span style="color:green">On time</span>`;
       }
-
-      // Parse as Date
       const plannedDate = new Date(plannedStr);
       const realDate = new Date(realStr);
 
-      // Compare
       if (plannedDate.getTime() === realDate.getTime()) {
         return `${plannedDisplay} <span style="color:green">On time</span>`;
       }
 
-      // Otherwise, calc how many minutes late
       let diffMs = realDate - plannedDate;
       let diffMins = Math.round(diffMs / 60000);
-      if (diffMins < 0) diffMins = 0; // ignoring early scenario
+      if (diffMins < 0) diffMins = 0;
 
       return `${plannedDisplay} <span style="color:red">${diffMins} min late</span>`;
     }
 
-    // Format a date-time string into YYYY-MM-DD HH:mm
+    // 9) Convert dateStr -> "YYYY-MM-DD HH:mm"
     function formatDateTime(dateStr) {
       if (!dateStr || dateStr === 'N/A') return 'N/A';
       const d = new Date(dateStr);
@@ -345,7 +371,7 @@
       return `${year}-${month}-${day} ${hour}:${min}`;
     }
 
-    // Run on page load
+    // On page load, fetch data
     fetchStationData();
   </script>
 </body>
