@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiware Aplikation für Wienerlinien</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        #navbar {
+            background-color: #333;
+            padding: 10px;
+            display: flex;
+            gap: 15px;
+        }
+        #navbar a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        #navbar a:hover {
+            text-decoration: underline;
+        }
+        #content {
+            background-image: url('https://lavegainnova.es/wp-content/uploads/2023/11/por-que-fiware.jpg');
+            background-size: cover;
+            background-position: center;
+            height: calc(100% - 50px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .title {
+            background-color: rgba(128, 128, 128, 0.7);
+            padding: 20px;
+            font-size: 36px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <div id="navbar">
+        <a href="index.html">Home</a>
+        <a href="team.html">Team</a>
+        <a href="doc.html">Documentation</a>
+        <a href="data.html">Data</a>
+    </div>
+
+    <!-- Content Section with Background Image and Title -->
+    <div id="content">
+        <div class="title">Fiware Aplikation für Wienerlinien</div>
+    </div>
+</body>
+</html>

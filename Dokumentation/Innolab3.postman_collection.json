@@ -1,0 +1,128 @@
+{
+	"info": {
+		"_postman_id": "4d136ded-c5f0-4d50-a0da-45c46b3506fe",
+		"name": "Innolab3",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30289919"
+	},
+	"item": [
+		{
+			"name": "Neubaugasse POST Request an Orion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/ld+json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/ld+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"@context\": \"https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld\",\r\n  \"id\": \"Stop:60200056\",\r\n  \"type\": \"Stop\",\r\n  \"name\": {\r\n    \"type\": \"Property\",\r\n    \"value\": \"Neubaugasse U\"\r\n  },\r\n  \"location\": {\r\n    \"type\": \"GeoProperty\",\r\n    \"value\": {\r\n      \"type\": \"Point\",\r\n      \"coordinates\": [16.3498682, 48.1985064]\r\n    }\r\n  },\r\n  \"lines\": {\r\n    \"type\": \"Property\",\r\n    \"value\": [\r\n      {\r\n        \"name\": \"13A\",\r\n        \"towards\": \"Hauptbahnhof S U\",\r\n        \"departures\": [\r\n          {\r\n            \"departureTime\": {\r\n              \"type\": \"Property\",\r\n              \"value\": {\r\n                \"timePlanned\": \"2024-11-10T14:09:30.000+0100\",\r\n                \"timeReal\": \"2024-11-10T14:10:15.000+0100\",\r\n                \"countdown\": 1\r\n              }\r\n            },\r\n            \"vehicle\": {\r\n              \"type\": \"Property\",\r\n              \"value\": {\r\n                \"name\": \"13A\",\r\n                \"type\": \"ptBusCity\",\r\n                \"linienId\": 413\r\n              }\r\n            }\r\n          }\r\n        ]\r\n      }\r\n    ]\r\n  }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1026/ngsi-ld/v1/entities",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1026",
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Test Request an Orion",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/ld+json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/ld+json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"id\": \"1\",\r\n    \"name\": {\r\n        \"type\": \"Text\",\r\n        \"value\": \"test\"\r\n    },\r\n    \"location\": {\r\n        \"type\": \"GeoProperty\",\r\n        \"value\": {\r\n            \"type\": \"Point\",\r\n            \"coordinates\": [\r\n                \"test\", \r\n                \"test\"\r\n            ]\r\n        }\r\n    }\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:1026/ngsi-ld/v1/entities",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "1026",
+					"path": [
+						"ngsi-ld",
+						"v1",
+						"entities"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "WL-Req Neubaugasse",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://www.wienerlinien.at/ogd_realtime/monitor?diva=60200056&monitors.lines.departures.departure.departureTime.countdown",
+					"protocol": "https",
+					"host": [
+						"www",
+						"wienerlinien",
+						"at"
+					],
+					"path": [
+						"ogd_realtime",
+						"monitor"
+					],
+					"query": [
+						{
+							"key": "diva",
+							"value": "60200056"
+						},
+						{
+							"key": "activateTrafficInfo",
+							"value": "stoerunglang",
+							"disabled": true
+						},
+						{
+							"key": "monitors.lines.departures.departure.departureTime.countdown",
+							"value": null
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  orion:
+    image: quay.io/fiware/orion-ld:1.7.0
+    hostname: orion
+    container_name: fiware-orion
+    networks:
+      - fiware
+    ports:
+      - "1026:1026"
+    depends_on:
+      - mongo-db
+    command: -dbhost mongo-db
+
+  mongo-db:
+    image: mongo:4.4
+    hostname: mongo-db
+    container_name: db-mongo
+    networks:
+      - fiware
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-db-data:/data/db
+
+networks:
+  fiware:
+    driver: bridge
+
+volumes:
+  mongo-db-data:
+    driver: local

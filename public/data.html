@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fiware App – Data</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    /* Navbar styling */
+    #navbar {
+      background-color: #333;
+      padding: 10px;
+      display: flex;
+      gap: 15px;
+      width: 100%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+    #navbar a {
+      color: white;
+      text-decoration: none;
+      font-size: 18px;
+    }
+    #navbar a:hover {
+      text-decoration: underline;
+    }
+
+    /* Search bar styling */
+    #search-container {
+      margin-top: 60px; /* leaves room for navbar */
+      padding: 20px;
+      text-align: center;
+      position: relative; /* so we can position the suggestions below */
+    }
+    #search-container h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    #search-container input[type="text"] {
+      width: 300px;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-right: 5px;
+    }
+    #search-container button {
+      padding: 8px 12px;
+      font-size: 16px;
+      background-color: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #search-container button:hover {
+      background-color: #555;
+    }
+
+    /* Autocomplete suggestions */
+    #autocomplete-list {
+      position: absolute;
+      top: 100px; /* Just below the search box or so */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      z-index: 1001;
+      display: none;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .autocomplete-item {
+      padding: 8px;
+      cursor: pointer;
+    }
+    .autocomplete-item:hover {
+      background-color: #eee;
+    }
+
+    /* Main map area */
+    #map {
+      height: calc(100% - 160px); /* fill space below navbar+search */
+      width: 100%;
+    }
+
+    /* Info panel */
+    #info-panel {
+      position: absolute;
+      top: 120px;
+      right: 20px;
+      width: 300px;
+      max-height: 60%;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 10px;
+      z-index: 9999; /* above map */
+      display: none; /* hidden by default */
+    }
+    #info-panel h2 {
+      margin: 0 0 10px;
+    }
+    #info-panel ul {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <div id="navbar">
+    <a href="index.html">Home</a>
+    <a href="team.html">Team</a>
+    <a href="doc.html">Documentation</a>
+    <a href="data.html">Data</a>
+  </div>
+
+  <!-- Search Container -->
+  <div id="search-container">
+    <h1>Search for a specific station</h1>
+    <input type="text" id="search-input" placeholder="Enter station name" />
+    <button onclick="searchStation()">Search</button>
+    <!-- Autocomplete suggestions container -->
+    <div id="autocomplete-list"></div>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map"></div>
+
+  <!-- Info Panel (shown on marker click or after searching) -->
+  <div id="info-panel"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    let stopsData = [];  
+    let map, infoPanel;
+    let markers = [];
+
+    // 1) Fetch the initial list of stops from /stops
+    async function fetchStationData() {
+      try {
+        const response = await fetch('/stops');
+        const data = await response.json();
+        stopsData = data.stops;
+
+        console.log('Initial stopsData:', stopsData);
+
+        // Create Leaflet map centered on Vienna
+        map = L.map('map').setView([48.2082, 16.3738], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // For each stop, place a marker
+        stopsData.forEach(stop => {
+          if (stop && stop.coordinates && stop.coordinates.length === 2) {
+            const [lng, lat] = stop.coordinates;
+            const marker = L.marker([lat, lng]).addTo(map);
+            marker.stopData = stop; // store the entire stop object
+
+            // Marker click -> update DB, wait, re-fetch, show updated info
+            marker.on('click', async () => {
+              await updateStopData(stop.diva);
+              // wait a bit for DB to update
+              await new Promise(r => setTimeout(r, 200));
+              // re-fetch the data
+              const updatedStop = await refetchSingleStop(stop.diva);
+              // now show updated info
+              showStopInfo(updatedStop);
+            });
+
+            markers.push(marker);
+          }
+        });
+
+        // Info panel reference
+        infoPanel = document.getElementById('info-panel');
+
+        // Autocomplete
+        const searchInput = document.getElementById("search-input");
+        searchInput.addEventListener("input", onSearchInput);
+
+      } catch (error) {
+        console.error('Error fetching station data:', error);
+      }
+    }
+
+    // 2) Update data for a given diva
+    async function updateStopData(diva) {
+      if (!diva) return;
+      try {
+        await fetch('/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diva })
+        });
+      } catch (err) {
+        console.error('Error updating data:', err);
+      }
+    }
+
+    // 3) Re-fetch the entire stops array, find the updated stop by diva
+    async function refetchSingleStop(diva) {
+      try {
+        const response = await fetch('/stops');
+        const data = await response.json();
+        const newStops = data.stops; 
+        console.log('Refetched stopsData:', newStops);
+
+        // find the updated stop
+        return newStops.find(s => s.diva === diva) || null;
+      } catch (error) {
+        console.error('Error re-fetching single stop:', error);
+        return null;
+      }
+    }
+
+    // 4) Autocomplete suggestions
+    function onSearchInput(event) {
+      const inputVal = event.target.value.toLowerCase();
+      const autoList = document.getElementById("autocomplete-list");
+      autoList.innerHTML = '';
+
+      if (!inputVal) {
+        autoList.style.display = 'none';
+        return;
+      }
+
+      const matchedStops = stopsData.filter(stop =>
+        stop.name && stop.name.toLowerCase().includes(inputVal)
+      );
+
+      if (matchedStops.length === 0) {
+        autoList.style.display = 'none';
+        return;
+      }
+
+      matchedStops.forEach(stop => {
+        const item = document.createElement("div");
+        item.classList.add("autocomplete-item");
+        item.textContent = stop.name;
+        item.onclick = () => {
+          document.getElementById("search-input").value = stop.name;
+          autoList.innerHTML = '';
+          autoList.style.display = 'none';
+        };
+        autoList.appendChild(item);
+      });
+
+      autoList.style.display = 'block';
+    }
+
+    // 5) Search button -> find station, update, wait, re-fetch, show info
+    async function searchStation() {
+      const searchValue = document.getElementById("search-input").value.toLowerCase();
+      let foundStop = null;
+
+      for (const stop of stopsData) {
+        if (stop && stop.name && stop.name.toLowerCase() === searchValue) {
+          foundStop = stop;
+          break;
+        }
+      }
+
+      if (!foundStop) {
+        alert("Station not found. Please try again.");
+        return;
+      }
+
+      // Recenter map
+      if (foundStop.coordinates && foundStop.coordinates.length === 2) {
+        const [lng, lat] = foundStop.coordinates;
+        map.setView([lat, lng], 15);
+      }
+
+      // Update DB for real-time data
+      await updateStopData(foundStop.diva);
+      // Wait a bit
+      await new Promise(r => setTimeout(r, 200));
+      // Re-fetch data and find updated station
+      const updatedStop = await refetchSingleStop(foundStop.diva);
+      // Then show side panel
+      showStopInfo(updatedStop);
+    }
+
+    // 6) Build the info panel content
+    function showStopInfo(stop) {
+      if (!stop) {
+        infoPanel.innerHTML = "<p>Error: Could not load updated data.</p>";
+        infoPanel.style.display = 'block';
+        return;
+      }
+
+      infoPanel.innerHTML = generateStopHTML(stop);
+      infoPanel.style.display = 'block';
+    }
+
+    // 7) Create HTML for a stop’s lines/departures
+    function generateStopHTML(stop) {
+      const { name, lines } = stop;
+
+      let linesHTML = '';
+      lines.forEach(line => {
+        const departuresHTML = line.departures.map(dep => {
+          return `<li>${formatDeparture(dep)}</li>`;
+        }).join('');
+
+        linesHTML += `
+          <li>
+            <strong>${line.name || 'No line name'}</strong>
+            <br/>Direction: ${line.direction || 'N/A'}
+            <ul>${departuresHTML}</ul>
+          </li>
+        `;
+      });
+
+      return `
+        <h2>${name || 'No name'}</h2>
+        <h3>Lines</h3>
+        <ul>${linesHTML}</ul>
+      `;
+    }
+
+    // 8) Format departure info (planned vs real)
+    function formatDeparture(dep) {
+      const plannedStr = dep.timePlanned;
+      const realStr = dep.timeReal;
+      const plannedDisplay = formatDateTime(plannedStr);
+
+      if (!realStr || realStr === 'N/A') {
+        return `${plannedDisplay} <span style="color:green">On time</span>`;
+      }
+      const plannedDate = new Date(plannedStr);
+      const realDate = new Date(realStr);
+
+      if (plannedDate.getTime() === realDate.getTime()) {
+        return `${plannedDisplay} <span style="color:green">On time</span>`;
+      }
+
+      let diffMs = realDate - plannedDate;
+      let diffMins = Math.round(diffMs / 60000);
+      if (diffMins < 0) diffMins = "<1";
+
+      return `${plannedDisplay} <span style="color:red">${diffMins} min late</span>`;
+    }
+
+    // 9) Convert dateStr -> "YYYY-MM-DD HH:mm"
+    function formatDateTime(dateStr) {
+      if (!dateStr || dateStr === 'N/A') return 'N/A';
+      const d = new Date(dateStr);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hour = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hour}:${min}`;
+    }
+
+    // On page load, fetch data
+    fetchStationData();
+  </script>
+</body>
+</html>
